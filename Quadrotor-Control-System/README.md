@@ -113,6 +113,45 @@ kd_beta = 1.2    # K khuếch đại D góc gripper
 ## Bắt Đầu
 
 ### Yêu Cầu Cài Đặt
+
+#### Cách 1: Sử dụng Conda (Khuyến nghị)
+
+**Bước 1: Tạo môi trường conda mới**
+```bash
+conda create -n quad2d python=3.9
+```
+
+**Bước 2: Kích hoạt môi trường**
+```bash
+conda activate quad2d
+```
+
+**Bước 3: Cài đặt các thư viện cần thiết**
+```bash
+# Di chuyển vào thư mục dự án
+cd Quadrotor-Control-System
+
+# Cài đặt từ file requirements.txt
+pip install -r requirements.txt
+```
+
+**Bước 4: Chạy code**
+```bash
+cd src
+python dieu_khien.py --simulate --save_csv minsnap_results
+```
+
+**Lưu ý:** Mỗi lần mở terminal mới, cần kích hoạt môi trường:
+```bash
+conda activate quad2d
+```
+
+Để thoát môi trường:
+```bash
+conda deactivate
+```
+
+#### Cách 2: Cài đặt trực tiếp (không dùng môi trường ảo)
 ```bash
 pip install numpy pandas jax jaxlib matplotlib
 ```
