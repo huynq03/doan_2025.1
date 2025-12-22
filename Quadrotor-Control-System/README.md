@@ -117,6 +117,11 @@ kd_beta = 1.2    # K khuếch đại D góc gripper
 pip install numpy pandas jax jaxlib matplotlib
 ```
 
+### Phụ Thuộc
+- **Tệp chính:** `dieu_khien.py`, `chuyen_doi.py`, `mo_phong.py`, `flat_outputs.csv`
+- **Thư viện:** NumPy, Pandas, JAX/JAXlib, Matplotlib
+- **Đầu vào phẳng:** `flat_outputs.csv` chứa các cột: `t, x_q, z_q, beta`
+
 ### Cấu Trúc Thư Mục
 ```
 Quadrotor-Control-System/
@@ -168,6 +173,12 @@ python dieu_khien.py --beta_sign -1 --simulate --save_csv minsnap_results
 --save_csv PATH           Lưu kết quả ra CSV (thư mục hoặc đường dẫn file)
 --animate                 Hiển thị hoạt họa trong khi mô phỏng
 ```
+
+### Kết Quả Đầu Ra
+- Mặc định lưu tại `src/minsnap_results/ketqua.csv` với các cột:
+  - `t, u1, u2, u3, tau`
+  - `x_q, xdot_q, z_q, zdot_q`
+  - `theta, theta_dot, beta, beta_dot`
 
 ### File Đầu Vào/Đầu Ra
 

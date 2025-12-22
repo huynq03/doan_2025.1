@@ -159,7 +159,42 @@ class PDFFController:
         try:
             from mo_phong import jax_dynamics_matrix
         except Exception as e:
-            raise RuntimeError("Không import được mo_phong.py; không thể mô phỏng.") from e
+            # Fallback: dùng động lực học tối giản bằng NumPy nếu không import được mo_phong (ví dụ thiếu JAX)
+            print(f"[WARN] Không import được mo_phong.py ({e}). Dùng mô phỏng fallback đơn giản.")
+
+            def jax_dynamics_matrix(state: np.ndarray, control: np.ndarray, dt: float) -> np.ndarray:
+                """
+                Fallback dynamics (explicit Euler) cho hệ phẳng x–z:
+                state = [y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot]
+                control = [u1, u2, tau] với u2 = u3 (phần thân), tau: gripper.
+                """
+                m_q = float(self.params.get("m_q", 0.5))
+                m_g = float(self.params.get("m_g", 0.158))
+                J_q = float(self.params.get("J_q", 1.2e-2))
+                J_g = float(self.params.get("J_g", 1.0e-3))
+                g   = float(self.params.get("g", 9.81))
+                m_s = m_q + m_g
+
+                y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot = state.tolist()
+                u1, u2, tau = control.tolist()
+
+                # Động lực học tối giản (tương thích Eq. (31) và lực thrust)
+                y_ddot   = (u1 / max(m_s, 1e-9)) * np.sin(phi)
+                z_ddot   = (u1 / max(m_s, 1e-9)) * np.cos(phi) - g
+                phi_ddot = (u2 - tau) / max(J_q, 1e-9)
+                beta_ddot= tau / max(J_g, 1e-9)
+
+                # Tích phân Euler
+                y_dot   = y_dot   + y_ddot   * dt
+                y       = y       + y_dot    * dt
+                z_dot   = z_dot   + z_ddot   * dt
+                z       = z       + z_dot    * dt
+                phi_dot = phi_dot + phi_ddot * dt
+                phi     = phi     + phi_dot  * dt
+                beta_dot= beta_dot+ beta_ddot* dt
+                beta    = beta    + beta_dot * dt
+
+                return np.array([y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot], dtype=float)
 
         # Khởi tạo tại tư thế mong muốn ban đầu
         y0   = self.x_qd[0]
