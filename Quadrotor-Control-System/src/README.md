@@ -1,4 +1,4 @@
-# Control4 - Quadrotor Controller
+# Bộ Điều Khiển Quadrotor (PD + FF)
 
 Thư mục này chứa các file cần thiết để chạy PD + Feed-forward controller cho quadrotor + gripper.
 
@@ -6,9 +6,9 @@ Thư mục này chứa các file cần thiết để chạy PD + Feed-forward co
 
 ```
 src/
-├── control4.py          # Controller chính (PD + FF)
-├── tranfer.py           # Ánh xạ flat outputs → control inputs
-├── scope1.py            # Dynamics và animation
+├── dieu_khien.py        # Bộ điều khiển chính (PD + FF)
+├── chuyen_doi.py        # Ánh xạ đầu ra phẳng → lệnh điều khiển
+├── mo_phong.py          # Động lực học và trực quan hóa
 ├── flat_outputs.csv     # Dữ liệu quỹ đạo đầu vào
 ├── minsnap_results/     # Thư mục output simulation
 └── archive/             # Các file cũ không dùng
@@ -18,28 +18,28 @@ src/
 
 ### Mô phỏng cơ bản:
 ```bash
-python control4.py --flat_csv flat_outputs.csv --simulate --save_csv minsnap_results
+python dieu_khien.py --flat_csv flat_outputs.csv --simulate --save_csv minsnap_results
 ```
 
 ### Với animation:
 ```bash
-python control4.py --flat_csv flat_outputs.csv --simulate --save_csv minsnap_results --animate
+python dieu_khien.py --flat_csv flat_outputs.csv --simulate --save_csv minsnap_results --animate
 ```
 
 ### Tùy chọn beta_sign:
 ```bash
 # Nếu plant dùng CCW dương (mặc định)
-python control4.py --beta_sign 1 --simulate
+python dieu_khien.py --beta_sign 1 --simulate
 
 # Nếu plant dùng CW dương
-python control4.py --beta_sign -1 --simulate
+python dieu_khien.py --beta_sign -1 --simulate
 ```
 
 ## Dependencies
 
 **File phụ thuộc:**
-- `tranfer.py`: Cung cấp `recover_inputs_from_flat()` và `PARAMS`
-- `scope1.py`: Cung cấp `jax_dynamics_matrix()` cho dynamics và `animate()` cho visualization
+- `chuyen_doi.py`: Cung cấp `recover_inputs_from_flat()` và `PARAMS`
+- `mo_phong.py`: Cung cấp `jax_dynamics_matrix()` cho dynamics và `animate()` cho visualization
 - `flat_outputs.csv`: Quỹ đạo tham chiếu (t, x_q, z_q, beta)
 
 **Thư viện Python:**

@@ -61,17 +61,17 @@ z_g = z_q - L_g sin(β)
 ### Các Thành Phần Chính
 
 #### Hệ Điều Khiển Lõi (`src/`)
-- **`control4.py`** – Bộ điều khiển PD + feed-forward chính
+- **`dieu_khien.py`** – Bộ điều khiển PD + feed-forward chính
   - Điều khiển phân tầng vị trí/góc thân/gripper
   - Hỗ trợ chuyển đổi quy ước dấu của `beta`
-  - Tích hợp mô phỏng `scope1`
+  - Tích hợp mô phỏng `mo_phong`
   
-- **`tranfer.py`** – Bộ ánh xạ phẳng vi phân
+  - **`chuyen_doi.py`** – Bộ ánh xạ phẳng vi phân
   - Hiện thực các phương trình (16)–(31) từ bài báo
   - Ánh xạ (x_q, z_q, β) → (u₁, u₃, τ, θ, θ̇)
   - Vi phân bằng sai phân hữu hạn
   
-- **`scope1.py`** – Mô phỏng động lực học và trực quan hóa
+- **`mo_phong.py`** – Mô phỏng động lực học và trực quan hóa
   - Tích hợp động học bằng JAX
   - Hỗ trợ hoạt họa trực quan quỹ đạo
 
@@ -86,13 +86,13 @@ z_g = z_q - L_g sin(β)
 
 ### Kiến Trúc Điều Khiển
 
-Đầu ra phẳng (x_q, z_q, β)  →  [tranfer.py]  →  Feed-forward (u₁ᵈ, u₃ᵈ, τᵈ, θᵈ)
+Đầu ra phẳng (x_q, z_q, β)  →  [chuyen_doi.py]  →  Feed-forward (u₁ᵈ, u₃ᵈ, τᵈ, θᵈ)
                                                            ↓
-Trạng thái hệ (đo lường)     →  [control4.py] →  Hiệu chỉnh PD  →  Lệnh cuối cùng
+Trạng thái hệ (đo lường)     →  [dieu_khien.py] →  Hiệu chỉnh PD  →  Lệnh cuối cùng
                                                            ↓
-                                                   [scope1.py] Mô phỏng
+                                                   [mo_phong.py] Mô phỏng
 
-**Hệ số khuếch đại điều khiển (chỉnh trong `control4.py`):**
+**Hệ số khuếch đại điều khiển (chỉnh trong `dieu_khien.py`):**
 ```python
 kpx = 1.2        # K khuếch đại P vị trí ngang
 kdx = 0.6        # K khuếch đại D vị trí ngang
@@ -121,9 +121,9 @@ pip install numpy pandas jax jaxlib matplotlib
 ```
 Quadrotor-Control-System/
 ├── src/
-│   ├── control4.py          # Bộ điều khiển chính
-│   ├── tranfer.py           # Ánh xạ phẳng vi phân
-│   ├── scope1.py            # Mô phỏng
+│   ├── dieu_khien.py        # Bộ điều khiển chính
+│   ├── chuyen_doi.py        # Ánh xạ phẳng vi phân
+│   ├── mo_phong.py          # Mô phỏng
 │   ├── flat_outputs.csv     # Dữ liệu quỹ đạo
 │   ├── minsnap_results/     # Thư mục kết quả
 │   └── archive/             # Trình QP & các file cũ
@@ -144,27 +144,27 @@ python qp5.py
 python qp4.py
 ```
 
-**Lưu ý:** `control4.py` dùng `flat_outputs.csv` theo mặc định (được sinh bởi `qp5.py`). Để dùng đầu ra từ `qp4.py`, chỉ định `--flat_csv ../minsnap_results/flat_outputs1.csv`.
+**Lưu ý:** `dieu_khien.py` dùng `flat_outputs.csv` theo mặc định (được sinh bởi `qp5.py`). Để dùng đầu ra từ `qp4.py`, chỉ định `--flat_csv ../minsnap_results/flat_outputs1.csv`.
 
 #### 2. Chạy Mô Phỏng Bộ Điều Khiển
 ```bash
 cd src
 
 # Mô phỏng cơ bản
-python control4.py --flat_csv flat_outputs.csv --simulate --save_csv minsnap_results
+python dieu_khien.py --flat_csv flat_outputs.csv --simulate --save_csv minsnap_results
 
 # Kèm hoạt họa
-python control4.py --simulate --save_csv minsnap_results --animate
+python dieu_khien.py --simulate --save_csv minsnap_results --animate
 
 # Thay đổi quy ước dấu cho beta (nếu cần)
-python control4.py --beta_sign -1 --simulate --save_csv minsnap_results
+python dieu_khien.py --beta_sign -1 --simulate --save_csv minsnap_results
 ```
 
 #### 3. Tùy Chọn Dòng Lệnh
 ```
 --flat_csv FLAT_CSV       CSV quỹ đạo đầu vào (mặc định: flat_outputs.csv)
 --beta_sign {1,-1}        Quy ước dấu góc beta: +1=CCW, -1=CW (mặc định: 1)
---simulate                Bật mô phỏng với scope1.py
+--simulate                Bật mô phỏng với mo_phong.py
 --save_csv PATH           Lưu kết quả ra CSV (thư mục hoặc đường dẫn file)
 --animate                 Hiển thị hoạt họa trong khi mô phỏng
 ```

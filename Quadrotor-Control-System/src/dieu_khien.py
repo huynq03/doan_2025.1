@@ -3,10 +3,10 @@
 """
 PD + Feed-forward controller cho quadrotor + gripper (mặt phẳng x–z),
 tuân theo IDETC'13 (Thomas et al., 2013). Các feed-forward u1^d, u3^d, tau^d,
-theta^d, thetadot^d lấy từ tranfer.recover_inputs_from_flat (ánh xạ (16)–(31)).
+theta^d, thetadot^d lấy từ chuyen_doi.recover_inputs_from_flat (ánh xạ (16)–(31)).
 
 Điểm khác biệt so với bản cũ:
-  (1) Sửa mô phỏng scope1: dùng u2 = u3 (KHÔNG cộng tau) để thỏa Eq. (31).
+    (1) Sửa mô phỏng mo_phong: dùng u2 = u3 (KHÔNG cộng tau) để thỏa Eq. (31).
   (2) Thêm beta_sign để xử lý trường hợp plant dùng quy ước beta ngược dấu:
       - Map đo lường beta về quy ước của bài báo (CCW dương) để tính PD.
       - Chuyển ngược phần PD torque về quy ước plant khi phát lệnh.
@@ -23,8 +23,8 @@ import pandas as pd
 import os
 
 # ===== Lấy ánh xạ phẳng -> điều khiển đã có sẵn =====
-# File người dùng cung cấp là "tranfer.py"
-import tranfer as tf  # :contentReference[oaicite:4]{index=4}
+# File người dùng cung cấp là "chuyen_doi.py"
+import chuyen_doi as tf  # :contentReference[oaicite:4]{index=4}
 
 
 # ---------- Helpers ---------- tính đao hàm bằng sai phân hữu hạn mảng y theo t ----------
@@ -60,7 +60,7 @@ class PDFFController:
         gains: Optional[Gains] = None,
         beta_sign: int = +1,  # +1: cùng chiều CCW như bài báo; -1: plant dùng CW dương
     ):
-        # Tham số động học (trùng tranfer.py)
+        # Tham số động học (trùng chuyen_doi.py)
         self.params: Dict[str, float] = dict(tf.PARAMS if params is None else params)
         self.gains = gains if gains is not None else Gains()
         self.s = +1 if beta_sign >= 0 else -1  # s ∈ {+1,-1}
@@ -149,17 +149,17 @@ class PDFFController:
 
         return float(u1_c), float(u3_c), float(tau_c)
 
-    # ---------------- (Tuỳ chọn) harness mô phỏng với scope1.py ----------------
+    # ---------------- (Tuỳ chọn) harness mô phỏng với mo_phong.py ----------------
     def simulate_with_scope1(self, save_csv: Optional[str] = None, animate: bool = False):
         """
-        Harness tối giản chạy mô phỏng phẳng với scope1 (nếu có).
-        scope1 dùng state = [y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot],
+        Harness tối giản chạy mô phỏng phẳng với mo_phong (nếu có).
+        mo_phong dùng state = [y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot],
         và động học: J_q*phi_ddot = (u2 - tau). ĐỂ ÁNH XẠ ĐÚNG (Eq. 31), PHẢI DÙNG u2 = u3.
         """
         try:
-            from scope1 import jax_dynamics_matrix
+            from mo_phong import jax_dynamics_matrix
         except Exception as e:
-            raise RuntimeError("Không import được scope1.py; không thể mô phỏng.") from e
+            raise RuntimeError("Không import được mo_phong.py; không thể mô phỏng.") from e
 
         # Khởi tạo tại tư thế mong muốn ban đầu
         y0   = self.x_qd[0]
@@ -180,7 +180,7 @@ class PDFFController:
             )
             u1, u3, tau = self.step(i, meas)
 
-            # ÁNH XẠ ĐÚNG: scope1 dùng J_q*phi_ddot = (u2 - tau) ⇒ Đặt u2 = u3
+            # ÁNH XẠ ĐÚNG: mo_phong dùng J_q*phi_ddot = (u2 - tau) ⇒ Đặt u2 = u3
             u2 = u3
 
             # Tích phân một bước
@@ -223,8 +223,8 @@ class PDFFController:
 
         if animate:
             try:
-                from scope1 import animate as scope1_animate
-                scope1_animate(states, cmds[:, :3], target=(self.x_qd[-1], self.z_qd[-1]), dt=self.dt)
+                from mo_phong import animate as mo_phong_animate
+                mo_phong_animate(states, cmds[:, :3], target=(self.x_qd[-1], self.z_qd[-1]), dt=self.dt)
             except Exception as e:
                 print(f"Animation failed: {e}")
 
@@ -239,9 +239,9 @@ if __name__ == "__main__":
                         help="CSV planner: cột t,x_q,z_q,beta (beta: rad, quy ước 'paper').")
     parser.add_argument("--beta_sign", type=int, default=+1,
                         help="+1 nếu plant dùng CCW dương như bài báo; -1 nếu plant dùng CW dương.")
-    parser.add_argument("--simulate", action="store_true", help="Chạy mô phỏng với scope1.py (nếu có).")
+    parser.add_argument("--simulate", action="store_true", help="Chạy mô phỏng với mo_phong.py (nếu có).")
     parser.add_argument("--save_csv", type=str, default=None, help="Nếu set, lưu log mô phỏng ra CSV.")
-    parser.add_argument("--animate", action="store_true", help="Hiển thị animation (scope1).")
+    parser.add_argument("--animate", action="store_true", help="Hiển thị animation (mo_phong).")
     args = parser.parse_args()
 
     ctrl = PDFFController(flat_csv=args.flat_csv, beta_sign=args.beta_sign)
