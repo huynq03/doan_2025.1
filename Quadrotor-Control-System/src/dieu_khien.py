@@ -5,14 +5,6 @@ PD + Feed-forward controller cho quadrotor + gripper (mặt phẳng x–z),
 tuân theo IDETC'13 (Thomas et al., 2013). Các feed-forward u1^d, u3^d, tau^d,
 theta^d, thetadot^d lấy từ chuyen_doi.recover_inputs_from_flat (ánh xạ (16)–(31)).
 
-Điểm khác biệt so với bản cũ:
-    (1) Sửa mô phỏng mo_phong: dùng u2 = u3 (KHÔNG cộng tau) để thỏa Eq. (31).
-  (2) Thêm beta_sign để xử lý trường hợp plant dùng quy ước beta ngược dấu:
-      - Map đo lường beta về quy ước của bài báo (CCW dương) để tính PD.
-      - Chuyển ngược phần PD torque về quy ước plant khi phát lệnh.
-      - Điều chỉnh đúng cặp (u3^d, tau^d) FF để vẫn đảm bảo u3^d - tau^d = Jq*theta_ddot^d
-        dưới mọi lựa chọn beta_sign.
-
 Tham khảo: AVIAN-INSPIRED GRASPING FOR QUADROTOR MICRO UAVS, Eq. (1),(16)–(31).
 """
 
@@ -207,12 +199,38 @@ class PDFFController:
         cmds   = []  # (u1, u2, u3, tau)
 
         for i in range(len(self.t)-1):
+            # ====== 1) noise cấu hình (bạn có thể chỉnh các sigma này) ======
+            # vị trí (m)
+            sigma_x = 0.005
+            sigma_z = 0.005
+            # vận tốc (m/s)
+            sigma_xd = 0.02
+            sigma_zd = 0.02
+            # góc (rad) ~ 0.5 deg
+            sigma_theta = np.deg2rad(0.5)
+            sigma_beta  = np.deg2rad(0.5)
+            # tốc độ góc (rad/s)
+            sigma_thetad = 0.03
+            sigma_betad  = 0.03
+
+            # ====== 2) sinh noise Gaussian ======
+            nx  = np.random.randn() * sigma_x
+            nz  = np.random.randn() * sigma_z
+            nxd = np.random.randn() * sigma_xd
+            nzd = np.random.randn() * sigma_zd
+            nth = np.random.randn() * sigma_theta
+            nthd= np.random.randn() * sigma_thetad
+            nb  = np.random.randn() * sigma_beta
+            nbd = np.random.randn() * sigma_betad
+
+            # ====== 3) meas bị nhiễu (controller dùng meas này) ======
             meas = dict(
-                x_q=state[0],     xdot_q=state[1],
-                z_q=state[2],     zdot_q=state[3],
-                theta=state[4],   theta_dot=state[5],
-                beta=state[6],    beta_dot=state[7],
+                x_q=float(state[0] + nx),     xdot_q=float(state[1] + nxd),
+                z_q=float(state[2] + nz),     zdot_q=float(state[3] + nzd),
+                theta=float(state[4] + nth), theta_dot=float(state[5] + nthd),
+                beta=float(state[6] + nb),   beta_dot=float(state[7] + nbd),
             )
+
             u1, u3, tau = self.step(i, meas)
 
             # ÁNH XẠ ĐÚNG: mo_phong dùng J_q*phi_ddot = (u2 - tau) ⇒ Đặt u2 = u3
@@ -238,7 +256,7 @@ class PDFFController:
                     os.makedirs(folder_path)
                 
                 # Tự động đặt tên file
-                save_csv = os.path.join(folder_path, "ketqua.csv")
+                save_csv = os.path.join(folder_path, "C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\ketqua.csv")
             else:
                 # Nếu người dùng nhập cả tên file (ví dụ: results/log.csv)
                 # Cần đảm bảo thư mục cha tồn tại
@@ -270,7 +288,7 @@ class PDFFController:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="PD + FF quad controller (planar).")
-    parser.add_argument("--flat_csv", type=str, default="flat_outputs.csv",
+    parser.add_argument("--flat_csv", type=str, default="C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\flat_outputs.csv",
                         help="CSV planner: cột t,x_q,z_q,beta (beta: rad, quy ước 'paper').")
     parser.add_argument("--beta_sign", type=int, default=+1,
                         help="+1 nếu plant dùng CCW dương như bài báo; -1 nếu plant dùng CW dương.")

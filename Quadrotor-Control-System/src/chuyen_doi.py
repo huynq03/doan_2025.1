@@ -6,9 +6,9 @@ from typing import Dict
 PARAMS = dict(
     m_q = 0.500,     # kg
     m_g = 0.158,     # kg
-    J_q = 1.2e-2,    # kg*m^2
-    J_g = 1.0e-3,    # kg*m^2
-    L_g = 0.105,     # m
+    J_q = 0.15,      # kg*m^2
+    J_g = 0.001,     # kg*m^2
+    L_g = 0.35,      # m
     g   = 9.81,      # m/s^2
 )
 
@@ -108,10 +108,10 @@ def recover_inputs_from_flat(
 # MAIN: đọc flat_outputs.csv và xuất inputs_from_flat.csv
 # ==============================
 if __name__ == "__main__":
-    flat_csv = "/home/huynq/Project20251/Quadrotor-Control-System/src/minsnap_results/flat_outputs.csv"      # Đường dẫn đầu vào
-    out_csv  = "/home/huynq/Project20251/Quadrotor-Control-System/src/minsnap_results/inputs_from_flat.csv"  # Đường dẫn đầu ra
+    flat_csv = "C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\flat_outputs1.csv"      # Đường dẫn đầu vào
+    out_csv  = "C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\inputs_from_flat.csv"  # Đường dẫn đầu ra
 
-    # Đọc dữ liệu phẳng (beta phải là radian)
+    # Đọc dữ liệu phẳng (beta phải là radian)s
     df = pd.read_csv(flat_csv)
     for col in ("t", "x_q", "z_q", "beta"):
         if col not in df.columns:

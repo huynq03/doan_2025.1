@@ -284,7 +284,7 @@ fig.tight_layout(); plt.show()
 # Lưu file cho tranfer.py
 # ==============================
 import pandas as pd
-flat_out_path = "C:/Users/2003h/OneDrive/Máy tính/quad2d_gripper/Quadrotor-Control-System/src/minsnap_results/flat_outputs1.csv"
+flat_out_path = "C:/Users/2003h/OneDrive/Máy tính/doan_2025.1/Quadrotor-Control-System/src/minsnap_results/flat_outputs1.csv"
 df_flat = pd.DataFrame({
     "t": t,
     "x_q": x,

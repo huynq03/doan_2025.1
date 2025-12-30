@@ -183,7 +183,7 @@ def evaluate_piecewise(coeffs: np.ndarray, segs: List[Segment], t_query: np.ndar
 # ----------------------- Builder chính -----------------------
 def build_flat_trajectories(t_pick: float, t_final: float,
                             beta_min_deg_local: float, beta_max_deg_local: float,
-                            out_csv: str = "flat_outputs.csv",
+                            out_csv: str = "C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\flat_outputs.csv",
                             plot: bool = False):
     n = poly_degree
     cpseg = n + 1

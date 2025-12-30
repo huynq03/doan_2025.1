@@ -3,12 +3,13 @@ import jax.numpy as jnp
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import os
 
 # ==== Parameters ====
 dt = 0.02
 m_q, m_g, g = 0.5, 0.158, 9.81
 l_p, l_q = 0.35, 0.2
-J_q, J_g, L_g = 0.15, 0.0, 0.35
+J_q, J_g, L_g = 0.15, 0.001, 0.35
 
 # ==== Dynamics ====
 def jax_dynamics_matrix(state, control, dt=dt):
@@ -55,14 +56,6 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
 
     # ======= Dữ liệu trạng thái =======
     y, z, phi, beta = states[:,0], states[:,2], states[:,4], states[:,6]
-    
-    # Kiểm tra dữ liệu hợp lệ
-    if np.any(np.isnan(y)) or np.any(np.isnan(z)) or np.any(np.isinf(y)) or np.any(np.isinf(z)):
-        print("[ERROR] Phát hiện NaN hoặc Inf trong dữ liệu trạng thái!")
-        print(f"  y: min={np.nanmin(y):.3f}, max={np.nanmax(y):.3f}, NaN count={np.sum(np.isnan(y))}")
-        print(f"  z: min={np.nanmin(z):.3f}, max={np.nanmax(z):.3f}, NaN count={np.sum(np.isnan(z))}")
-        print("  Animation bị hủy. Kiểm tra tham số động lực học và điều khiển.")
-        return
 
     # --- TẠO 2 KHUNG HÌNH CON SONG SONG ---
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20*scale_draw/2, 10*scale_draw/2), dpi=120)
@@ -74,10 +67,8 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
     ax1.add_patch(plt.Circle(target, 0.1*scale_draw, color="g", fill=False))
 
     # Cấu hình ax2 (Full View)
-    y_min, y_max = float(y.min()), float(y.max())
-    z_min, z_max = float(z.min()), float(z.max())
-    ax2.set_xlim(min(y_min, target[0])-1, max(y_max, target[0])+1)
-    ax2.set_ylim(min(z_min, target[1])-1, max(z_max, target[1])+1)
+    ax2.set_xlim(min(y.min(), target[0])-1, max(y.max(), target[0])+1)
+    ax2.set_ylim(min(z.min(), target[1])-1, max(z.max(), target[1])+1)
     ax2.set_aspect("equal"); ax2.grid(True, alpha=0.3)
     ax2.set_title("Full View")
     ax2.add_patch(plt.Circle(target, 0.1*scale_draw, color="g", fill=False))
@@ -153,14 +144,6 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
         right_thrust_line1.set_data(right_bar[0], right_bar[1])
 
         trail1.set_data(y[:i+1], z[:i+1])
-        
-        # Gripper tip position (end effector)
-        gripper_tip1.set_data([end_x], [end_y])
-        
-        # Highlight khi gripper gần target (trong vòng 0.2m)
-        dist_to_target = np.sqrt((end_x - target[0])**2 + (end_y - target[1])**2)
-        if dist_to_target < 0.2:
-            highlight1.set_alpha(0.8)
 
         # Full view updates
         frame_line2.set_data(body[0], body[1])
@@ -176,4 +159,13 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
         return (frame_line1, tether_line1, trail1, left_line1, right_line1,
                 left_thrust_line1, right_thrust_line1,
                 frame_line2, tether_line2, trail2, left_line2, right_line2,
-                left_thrust_line2, right_thrust_line
+                left_thrust_line2, right_thrust_line2)
+
+    ani = FuncAnimation(fig, update, frames=len(states), interval=dt*1000, blit=False)
+    plt.show()
+
+# Read minsnap results
+data_path = os.path.join("minsnap_results", "flat_outputs.csv")
+data = np.loadtxt(data_path, delimiter=",")
+states = data[:, :8]
+controls = data[:, 8:]

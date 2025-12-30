@@ -24,13 +24,13 @@ m_s \ddot{z}_s &= u_1 \cos \theta - m_s g
 \end{align}$$
 
 Trong đó:
-- m_q = 0,500 kg (khối lượng quadrotor)
-- m_g = 0,158 kg (khối lượng gripper)
+- m_q = 0.500 kg (khối lượng quadrotor)
+- m_g = 0.158 kg (khối lượng gripper)
 - m_s = m_q + m_g (khối lượng toàn hệ)
-- J_q = 1,2×10⁻² kg·m² (mô-men quán tính quadrotor)
-- J_g = 1,0×10⁻³ kg·m² (mô-men quán tính gripper)
-- L_g = 0,105 m (chiều dài tay gripper)
-- g = 9,81 m/s² (gia tốc trọng trường)
+- J_q = 0.15 kg·m² (mô-men quán tính quadrotor)
+- J_g = 0.001 kg·m² (mô-men quán tính gripper)
+- L_g = 0.35 m (chiều dài tay gripper)
+- g = 9.81 m/s² (gia tốc trọng trường)
 
 **Quan hệ động học của gripper:**
 ```
