@@ -40,8 +40,8 @@ class Gains:
     kp_theta: float = 6.0
     kd_theta: float = 2.5
     # Cánh tay (beta)
-    kp_beta: float = 4.0
-    kd_beta: float = 1.2
+    kp_beta: float = 2
+    kd_beta: float = 0.6
 
 
 class PDFFController:
@@ -208,10 +208,10 @@ class PDFFController:
             sigma_zd = 0.02
             # góc (rad) ~ 0.5 deg
             sigma_theta = np.deg2rad(0.5)
-            sigma_beta  = np.deg2rad(0.5)
+            sigma_beta  = np.deg2rad(5.0)
             # tốc độ góc (rad/s)
             sigma_thetad = 0.03
-            sigma_betad  = 0.03
+            sigma_betad  = 0.3
 
             # ====== 2) sinh noise Gaussian ======
             nx  = np.random.randn() * sigma_x
