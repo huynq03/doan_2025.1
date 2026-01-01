@@ -164,8 +164,9 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
     ani = FuncAnimation(fig, update, frames=len(states), interval=dt*1000, blit=False)
     plt.show()
 
-# Read minsnap results
-data_path = os.path.join("minsnap_results", "flat_outputs.csv")
-data = np.loadtxt(data_path, delimiter=",")
-states = data[:, :8]
-controls = data[:, 8:]
+# Read minsnap results (chỉ chạy khi được gọi trực tiếp)
+if __name__ == "__main__":
+    data_path = os.path.join("minsnap_results", "flat_outputs.csv")
+    data = np.loadtxt(data_path, delimiter=",", skiprows=1)  # Bỏ qua header
+    states = data[:, :8]
+    controls = data[:, 8:]

@@ -14,12 +14,10 @@ import numpy as np
 import pandas as pd
 import os
 
-# ===== Lấy ánh xạ phẳng -> điều khiển đã có sẵn =====
-# File người dùng cung cấp là "chuyen_doi.py"
-import chuyen_doi as tf  # :contentReference[oaicite:4]{index=4}
+import chuyen_doi as tf 
 
 
-# ---------- Helpers ---------- tính đao hàm bằng sai phân hữu hạn mảng y theo t ----------
+# đạo hàm y theo t bằng sai phân hữu hạn
 def finite_diff(t: np.ndarray, y: np.ndarray, order: int) -> np.ndarray:
     """Central finite-difference of given order."""
     out = y.astype(float).copy()
@@ -50,41 +48,36 @@ class PDFFController:
         flat_csv: str,
         params: Optional[Dict[str, float]] = None,
         gains: Optional[Gains] = None,
-        beta_sign: int = +1,  # +1: cùng chiều CCW như bài báo; -1: plant dùng CW dương
+        beta_sign: int = +1, 
     ):
-        # Tham số động học (trùng chuyen_doi.py)
+        # tham số dynamics từ tf module
         self.params: Dict[str, float] = dict(tf.PARAMS if params is None else params)
         self.gains = gains if gains is not None else Gains()
         self.s = +1 if beta_sign >= 0 else -1  # s ∈ {+1,-1}
 
-        # Đọc quỹ đạo phẳng từ QP (t, x_q, z_q, beta) — do qp3 ghi ra
-        # (qp3 đã ràng buộc β quét trái sau gắp theo đúng Fig. 6). :contentReference[oaicite:5]{index=5}
+        # Đọc quỹ đạo phẳng từ QP (t, x_q, z_q, beta) từ CSV
         df = pd.read_csv(flat_csv)
         for col in ("t", "x_q", "z_q", "beta"):
             if col not in df.columns:
                 raise ValueError(f"Thiếu cột '{col}' trong {flat_csv}")
-        self.t       = df["t"].to_numpy(dtype=float)
-        self.x_qd    = df["x_q"].to_numpy(dtype=float)
-        self.z_qd    = df["z_q"].to_numpy(dtype=float)
-        self.beta_d  = df["beta"].to_numpy(dtype=float)  # rad (quy ước 'paper': CCW dương)
+        self.t       = df["t"].to_numpy(dtype=float) # thời gian lấy từ CSV
+        self.x_qd    = df["x_q"].to_numpy(dtype=float) # vị trí x mong muốn từ CSV
+        self.z_qd    = df["z_q"].to_numpy(dtype=float) # vị trí z mong muốn từ CSV
+        self.beta_d  = df["beta"].to_numpy(dtype=float) # góc gripper mong muốn từ CSV 
 
         # Đạo hàm mong muốn cho PD
         self.xdot_qd    = finite_diff(self.t, self.x_qd, 1)
         self.zdot_qd    = finite_diff(self.t, self.z_qd, 1)
         self.betadot_d  = finite_diff(self.t, self.beta_d, 1)
 
-        # Feed‑forward từ ánh xạ phẳng→điều khiển (Eq. (16)–(31)). 
+        # Feed‑forward từ differential flatness --> control inputs
         ff = tf.recover_inputs_from_flat(self.t, self.x_qd, self.z_qd, self.beta_d, self.params)
         self.u1_d        = ff["u1"].astype(float)
-        self.u3_d_paper  = ff["u3"].astype(float)      # u3 theo quy ước 'paper'
-        self.tau_d_paper = ff["tau"].astype(float)     # tau theo quy ước 'paper'
+        self.u3_d_paper  = ff["u3"].astype(float)      
+        self.tau_d_paper = ff["tau"].astype(float)     
         self.theta_d     = ff["theta"].astype(float)
         self.theta_dot_d = ff["theta_dot"].astype(float)
 
-        # Điều chỉnh FF (u3, tau) về quy ước 'plant' theo beta_sign.
-        # Phân tích: u3 = Jq*theta_ddot + tau   (Eq. (31))  ⇒
-        #   tau_plant = (1/s)*tau_paper  (lật dấu nếu s=-1)
-        #   u3_plant  = u3_paper + (tau_plant - tau_paper) = u3_paper + (s-1)*tau_paper
         self.tau_d = (1.0 / self.s) * self.tau_d_paper
         self.u3_d  = self.u3_d_paper + (self.s - 1.0) * self.tau_d_paper
 
@@ -100,14 +93,14 @@ class PDFFController:
         """
         g = self.gains
 
-        # Lấy desired tại bước i
+        # các giá trị mong muốn tại i
         x_d, z_d   = self.x_qd[i], self.z_qd[i]
         xd_d, zd_d = self.xdot_qd[i], self.zdot_qd[i]
         th_d, thd_d = self.theta_d[i], self.theta_dot_d[i]
         beta_d, betad_d = self.beta_d[i], self.betadot_d[i]
         u1_ff, u3_ff, tau_ff = self.u1_d[i], self.u3_d[i], self.tau_d[i]
 
-        # --- Map đo lường beta của plant -> quy ước 'paper' để tính sai lệch ---
+        # các giá trị đo lường
         beta_m   = self.s * float(meas["beta"])
         betad_m  = self.s * float(meas["beta_dot"])
 
@@ -199,21 +192,20 @@ class PDFFController:
         cmds   = []  # (u1, u2, u3, tau)
 
         for i in range(len(self.t)-1):
-            # ====== 1) noise cấu hình (bạn có thể chỉnh các sigma này) ======
             # vị trí (m)
             sigma_x = 0.005
             sigma_z = 0.005
             # vận tốc (m/s)
             sigma_xd = 0.02
             sigma_zd = 0.02
-            # góc (rad) ~ 0.5 deg
+            # góc (rad) 
             sigma_theta = np.deg2rad(0.5)
             sigma_beta  = np.deg2rad(5.0)
             # tốc độ góc (rad/s)
             sigma_thetad = 0.03
-            sigma_betad  = 0.3
+            sigma_betad  = 1.0
 
-            # ====== 2) sinh noise Gaussian ======
+            # nhiễu Gaussian 
             nx  = np.random.randn() * sigma_x
             nz  = np.random.randn() * sigma_z
             nxd = np.random.randn() * sigma_xd
@@ -223,7 +215,7 @@ class PDFFController:
             nb  = np.random.randn() * sigma_beta
             nbd = np.random.randn() * sigma_betad
 
-            # ====== 3) meas bị nhiễu (controller dùng meas này) ======
+            # cộng nhiễu vào đo lường
             meas = dict(
                 x_q=float(state[0] + nx),     xdot_q=float(state[1] + nxd),
                 z_q=float(state[2] + nz),     zdot_q=float(state[3] + nzd),
@@ -248,18 +240,13 @@ class PDFFController:
 
         if save_csv:
             if not save_csv.lower().endswith('.csv'):
-                # Nếu người dùng chỉ nhập tên thư mục (ví dụ: minsnap_results)
                 folder_path = save_csv
                 
                 # Tạo thư mục nếu chưa có
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path)
-                
-                # Tự động đặt tên file
                 save_csv = os.path.join(folder_path, "C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\ketqua.csv")
             else:
-                # Nếu người dùng nhập cả tên file (ví dụ: results/log.csv)
-                # Cần đảm bảo thư mục cha tồn tại
                 folder_path = os.path.dirname(save_csv)
                 if folder_path and not os.path.exists(folder_path):
                     os.makedirs(folder_path)
@@ -282,9 +269,7 @@ class PDFFController:
                 print(f"Animation failed: {e}")
 
         return states, cmds
-
-
-# ----------------------------- CLI -----------------------------
+# main 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="PD + FF quad controller (planar).")

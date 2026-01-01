@@ -11,7 +11,7 @@ if not os.path.exists(media_dir):
 
 # 1. Đọc 2 file CSV
 df_sim = pd.read_csv('C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\ketqua.csv')
-df_flat = pd.read_csv('C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\flat_outputs1.csv')
+df_flat = pd.read_csv('C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\flat_outputs.csv')
 
 # Đảm bảo 2 file có cùng số điểm
 min_len = min(len(df_sim), len(df_flat))
