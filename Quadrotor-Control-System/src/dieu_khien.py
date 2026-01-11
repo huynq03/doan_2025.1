@@ -48,12 +48,10 @@ class PDFFController:
         flat_csv: str,
         params: Optional[Dict[str, float]] = None,
         gains: Optional[Gains] = None,
-        beta_sign: int = +1, 
     ):
         # tham số dynamics từ tf module
         self.params: Dict[str, float] = dict(tf.PARAMS if params is None else params)
         self.gains = gains if gains is not None else Gains()
-        self.s = +1 if beta_sign >= 0 else -1  # s ∈ {+1,-1}
 
         # Đọc quỹ đạo phẳng từ QP (t, x_q, z_q, beta) từ CSV
         df = pd.read_csv(flat_csv)
@@ -78,8 +76,8 @@ class PDFFController:
         self.theta_d     = ff["theta"].astype(float)
         self.theta_dot_d = ff["theta_dot"].astype(float)
 
-        self.tau_d = (1.0 / self.s) * self.tau_d_paper
-        self.u3_d  = self.u3_d_paper + (self.s - 1.0) * self.tau_d_paper
+        self.tau_d = self.tau_d_paper
+        self.u3_d  = self.u3_d_paper
 
         # dt
         self.dt = float(np.mean(np.diff(self.t)))
@@ -87,11 +85,12 @@ class PDFFController:
     def step(self, i: int, meas: Dict[str, float]):
         """
         Một bước điều khiển tại chỉ số i.
+        meas : chỉ số đo lường thực tế
         meas cần có:
             x_q, z_q, xdot_q, zdot_q, theta, theta_dot, beta, beta_dot
         Trả về: u1_cmd, u3_cmd, tau_cmd (theo quy ước 'plant')
         """
-        g = self.gains
+        g = self.gains # các thông số pd
 
         # các giá trị mong muốn tại i
         x_d, z_d   = self.x_qd[i], self.z_qd[i]
@@ -100,10 +99,6 @@ class PDFFController:
         beta_d, betad_d = self.beta_d[i], self.betadot_d[i]
         u1_ff, u3_ff, tau_ff = self.u1_d[i], self.u3_d[i], self.tau_d[i]
 
-        # các giá trị đo lường
-        beta_m   = self.s * float(meas["beta"])
-        betad_m  = self.s * float(meas["beta_dot"])
-
         # Sai lệch
         ex   = x_d - float(meas["x_q"])
         ez   = z_d - float(meas["z_q"])
@@ -111,31 +106,28 @@ class PDFFController:
         ezd  = zd_d - float(meas["zdot_q"])
         eth  = th_d - float(meas["theta"])
         ethd = thd_d - float(meas["theta_dot"])
-        eb   = beta_d - beta_m
-        ebd  = betad_d - betad_m
+        eb   = beta_d - float(meas["beta"])
+        ebd  = betad_d - float(meas["beta_dot"])
 
         # --- Eq. (11): thrust PD + FF ---
         u1_c = g.kpz * ez + g.kdz * ezd + u1_ff
 
         # --- Eq. (13): lateral -> attitude command ---
-        lat_cmd = g.kpx * ex + g.kdx * exd
-        lat_cmd = float(np.clip(lat_cmd, -0.999, 0.999))  # an toàn cho asin
-        theta_c = np.arcsin(lat_cmd) + th_d
+        lenh_ngang = g.kpx * ex + g.kdx * exd
+        lenh_ngang = float(np.clip(lenh_ngang, -0.999, 0.999))  # tránh lỗi arcsin
+        theta_c = np.arcsin(lenh_ngang) + th_d
 
         # --- Eq. (12): attitude moment PD + FF ---
         u3_pd = g.kp_theta * (theta_c - float(meas["theta"])) + g.kd_theta * ethd
         u3_c  = u3_pd + u3_ff
 
         # --- Cánh tay (β): PD + FF ---
-        tau_pd_paper = g.kp_beta * eb + g.kd_beta * ebd  # torque theo quy ước 'paper'
-        # Map về quy ước 'plant' (F' = F / s cho đổi biến q' = s q) với s ∈ {±1}
-        tau_pd_plant = (1.0 / self.s) * tau_pd_paper
-        tau_c = tau_pd_plant + tau_ff
+        tau_pd = g.kp_beta * eb + g.kd_beta * ebd  # torque trực tiếp
+        tau_c = tau_pd + tau_ff
 
         return float(u1_c), float(u3_c), float(tau_c)
 
-    # ---------------- (Tuỳ chọn) harness mô phỏng với mo_phong.py ----------------
-    def simulate_with_scope1(self, save_csv: Optional[str] = None, animate: bool = False):
+    def mophong(self, save_csv: Optional[str] = None, animate: bool = False):
         """
         Harness tối giản chạy mô phỏng phẳng với mo_phong (nếu có).
         mo_phong dùng state = [y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot],
@@ -185,7 +177,7 @@ class PDFFController:
         y0   = self.x_qd[0]
         z0   = self.z_qd[0]
         phi0 = self.theta_d[0]
-        beta0 = self.beta_d[0] * (1.0 / self.s)  # map beta desired sang quy ước plant cho state
+        beta0 = self.beta_d[0]
         state = np.array([y0, 0.0, z0, 0.0, phi0, 0.0, beta0, 0.0], dtype=float)
 
         states = [state.copy()]
@@ -193,11 +185,11 @@ class PDFFController:
 
         for i in range(len(self.t)-1):
             # vị trí (m)
-            sigma_x = 0.005
-            sigma_z = 0.005
+            sigma_x = 0.15
+            sigma_z = 0.15
             # vận tốc (m/s)
-            sigma_xd = 0.02
-            sigma_zd = 0.02
+            sigma_xd = 0.15
+            sigma_zd = 0.15
             # góc (rad) 
             sigma_theta = np.deg2rad(0.5)
             sigma_beta  = np.deg2rad(5.0)
@@ -245,6 +237,7 @@ class PDFFController:
                 # Tạo thư mục nếu chưa có
                 if not os.path.exists(folder_path):
                     os.makedirs(folder_path)
+                
                 save_csv = os.path.join(folder_path, "C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\ketqua.csv")
             else:
                 folder_path = os.path.dirname(save_csv)
@@ -264,7 +257,7 @@ class PDFFController:
         if animate:
             try:
                 from mo_phong import animate as mo_phong_animate
-                mo_phong_animate(states, cmds[:, :3], target=(self.x_qd[-1], self.z_qd[-1]), dt=self.dt)
+                mo_phong_animate(states, cmds[:, :3], target=(self.x_qd[-1], self.z_qd[-1]), dt=self.dt, save_frames=True, output_dir="../media/animation_frames")
             except Exception as e:
                 print(f"Animation failed: {e}")
 
@@ -272,19 +265,17 @@ class PDFFController:
 # main 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="PD + FF quad controller (planar).")
+    parser = argparse.ArgumentParser(description="PD + FF quad controller")
     parser.add_argument("--flat_csv", type=str, default="C:\\Users\\2003h\\OneDrive\\Máy tính\\doan_2025.1\\Quadrotor-Control-System\\src\\minsnap_results\\flat_outputs.csv",
-                        help="CSV planner: cột t,x_q,z_q,beta (beta: rad, quy ước 'paper').")
-    parser.add_argument("--beta_sign", type=int, default=+1,
-                        help="+1 nếu plant dùng CCW dương như bài báo; -1 nếu plant dùng CW dương.")
-    parser.add_argument("--simulate", action="store_true", help="Chạy mô phỏng với mo_phong.py (nếu có).")
-    parser.add_argument("--save_csv", type=str, default=None, help="Nếu set, lưu log mô phỏng ra CSV.")
-    parser.add_argument("--animate", action="store_true", help="Hiển thị animation (mo_phong).")
+                        help="CSV planner: cột t,x_q,z_q,beta (beta: rad).")
+    parser.add_argument("--simulate", action="store_true", help="Chạy mô phỏng với mo_phong.py")
+    parser.add_argument("--save_csv", type=str, default=None, help="luu file csv ket qua mo phong.")
+    parser.add_argument("--animate", action="store_true", help="mo phong")
     args = parser.parse_args()
 
-    ctrl = PDFFController(flat_csv=args.flat_csv, beta_sign=args.beta_sign)
+    ctrl = PDFFController(flat_csv=args.flat_csv)
 
     if args.simulate:
-        ctrl.simulate_with_scope1(save_csv=args.save_csv, animate=args.animate)
+        ctrl.mophong(save_csv=args.save_csv, animate=args.animate)
     else:
         print("Controller ready. Gọi PDFFController.step(i, meas) mỗi chu kỳ điều khiển.")

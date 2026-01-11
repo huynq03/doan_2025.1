@@ -35,13 +35,13 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 # ============================================================
 # HÌNH 1: So sánh Beta (full range)
 # ============================================================
-fig1, ax1 = plt.subplots(figsize=(12, 6))
+fig1, ax1 = plt.subplots(figsize=(8, 6))
 ax1.plot(df_sim['t'], df_sim['beta'], label='Beta (Simulation)', color='blue', linewidth=2.5, marker='o', markersize=3, alpha=0.8)
 ax1.plot(df_flat['t'], df_flat['beta'], label='Beta (Reference)', color='red', linestyle='--', linewidth=2.5)
 ax1.fill_between(df_sim['t'], df_sim['beta'], df_flat['beta'], alpha=0.2, color='yellow', label='Error Region')
 ax1.set_xlabel('Thời gian (s)', fontsize=12, fontweight='bold')
 ax1.set_ylabel('Góc Beta (rad)', fontsize=12, fontweight='bold')
-ax1.set_title('So sánh Góc Beta: Mô phỏng vs Tham chiếu', fontsize=13, fontweight='bold')
+ax1.set_title(r'So sánh góc $\beta$ : Mong muốn vs Thực tế', fontsize=13, fontweight='bold')
 ax1.legend(fontsize=11, loc='best')
 ax1.grid(True, alpha=0.3, linestyle='--')
 plt.tight_layout()
@@ -53,7 +53,7 @@ plt.close()
 # ============================================================
 # HÌNH 2: Tracking Error (Absolute Value)
 # ============================================================
-fig2, ax2 = plt.subplots(figsize=(12, 6))
+fig2, ax2 = plt.subplots(figsize=(8, 6))
 color_error = ['red' if e > mean_error else 'green' for e in abs_error]
 ax2.bar(df_sim['t'], abs_error, color=color_error, alpha=0.6, width=0.01, label='Absolute Error')
 ax2.axhline(y=mean_error, color='orange', linestyle='-', linewidth=2.5, label=f'Mean: {mean_error:.2e} rad')
@@ -72,7 +72,7 @@ plt.close()
 # ============================================================
 # HÌNH 3: Tracking Error (Relative Percentage)
 # ============================================================
-fig3, ax3 = plt.subplots(figsize=(12, 6))
+fig3, ax3 = plt.subplots(figsize=(8, 6))
 ax3.plot(df_sim['t'], percent_error, color='purple', linewidth=2.5, marker='s', markersize=3, label='Relative Error')
 ax3.axhline(y=np.mean(percent_error), color='orange', linestyle='-', linewidth=2.5, 
             label=f'Mean: {np.mean(percent_error):.4f}%')
@@ -93,7 +93,7 @@ plt.close()
 # ============================================================
 # HÌNH 4: So sánh vị trí (x_q, z_q)
 # ============================================================
-fig4, ax4 = plt.subplots(figsize=(12, 6))
+fig4, ax4 = plt.subplots(figsize=(8, 6))
 ax4.plot(df_sim['t'], df_sim['x_q'], label='x_q (Simulation)', color='#E60000', linewidth=3.5, alpha=0.95, linestyle='-')
 ax4.plot(df_sim['t'], df_sim['z_q'], label='z_q (Simulation)', color='#0066FF', linewidth=3.5, alpha=0.95, linestyle='-')
 if 'x_q' in df_flat.columns and 'z_q' in df_flat.columns:
@@ -101,7 +101,7 @@ if 'x_q' in df_flat.columns and 'z_q' in df_flat.columns:
     ax4.plot(df_flat['t'], df_flat['z_q'], label='z_q (Reference)', color='#FFB800', linestyle='--', linewidth=3, alpha=0.9)
 ax4.set_xlabel('Thời gian (s)', fontsize=12, fontweight='bold')
 ax4.set_ylabel('Vị trí (m)', fontsize=12, fontweight='bold')
-ax4.set_title('So sánh Vị trí Quadrotor (Simulation vs Reference)', fontsize=13, fontweight='bold')
+ax4.set_title(r'So sánh Vị trí Mong muốn vs Thực tế', fontsize=13, fontweight='bold')
 ax4.legend(fontsize=11, loc='best', framealpha=0.95)
 ax4.grid(True, alpha=0.3, linestyle='--')
 plt.tight_layout()
@@ -113,7 +113,7 @@ plt.close()
 # ============================================================
 # HÌNH 5: Tổng hợp tất cả 4 đồ thị
 # ============================================================
-fig5 = plt.figure(figsize=(16, 12))
+fig5 = plt.figure(figsize=(8, 6))
 gs = fig5.add_gridspec(4, 1, hspace=0.35)
 
 ax5_1 = fig5.add_subplot(gs[0])
@@ -121,7 +121,7 @@ ax5_1.plot(df_sim['t'], df_sim['beta'], label='Beta (Simulation)', color='blue',
 ax5_1.plot(df_flat['t'], df_flat['beta'], label='Beta (Reference)', color='red', linestyle='--', linewidth=2)
 ax5_1.fill_between(df_sim['t'], df_sim['beta'], df_flat['beta'], alpha=0.2, color='yellow', label='Error Region')
 ax5_1.set_ylabel('Góc Beta (rad)', fontsize=11, fontweight='bold')
-ax5_1.set_title('1. So sánh Góc Beta', fontsize=12, fontweight='bold')
+ax5_1.set_title(r'1. So sánh Góc $\beta$', fontsize=12, fontweight='bold')
 ax5_1.legend(fontsize=10)
 ax5_1.grid(True, alpha=0.3)
 

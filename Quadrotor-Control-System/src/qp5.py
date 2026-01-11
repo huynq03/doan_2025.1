@@ -370,22 +370,37 @@ def build_flat_trajectories(t_pick: float, t_final: float,
         "betad": bd
     })
     df.to_csv(out_csv, index=False)
-    print(f"[qp4] Saved flat outputs -> {out_csv}  (beta in [deg]: min={np.rad2deg(b).min():.1f}, max={np.rad2deg(b).max():.1f})")
+    print(f"[qp5] Saved flat outputs -> {out_csv}  (beta in [deg]: min={np.rad2deg(b).min():.1f}, max={np.rad2deg(b).max():.1f})")
 
     if plot:
         import matplotlib.pyplot as plt
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-        ax1.plot(t, np.rad2deg(b), label=r"$\beta^d$")
-        ax1.axhline(beta_min_deg_local, linestyle="--")
-        ax1.axhline(beta_max_deg_local, linestyle="--")
-        ax1.axvline(t_pick, linestyle=":")
-        ax1.set_xlabel("t (s)"); ax1.set_ylabel("deg"); ax1.set_title("beta(t) with bounds"); ax1.grid(True, alpha=0.5); ax1.legend()
-
-        ax2.plot(t, x, label="x_q^d")
-        ax2.plot(t, z, label="z_q^d")
-        ax2.axvline(t_pick, linestyle=":")
-        ax2.set_xlabel("t (s)"); ax2.set_ylabel("m"); ax2.set_title("quad position"); ax2.grid(True, alpha=0.5); ax2.legend()
-        fig.tight_layout(); plt.show()
+        
+        fig_size = (8,6)
+        
+        # Figure 1: Beta
+        fig1, ax1 = plt.subplots(figsize=fig_size)
+        ax1.plot(t, np.rad2deg(b), label=r"$\beta^d$", linewidth=2)
+        ax1.axvline(t_pick, linestyle=":", color="red", label="Pick time")
+        ax1.set_xlabel("t (s)", fontsize=12)
+        ax1.set_ylabel("deg", fontsize=12)
+        ax1.set_title(r"Góc $\beta$", fontsize=14)
+        ax1.grid(True, alpha=0.5)
+        ax1.legend(fontsize=10)
+        fig1.tight_layout()
+        
+        # Figure 2: X-Z
+        fig2, ax2 = plt.subplots(figsize=fig_size)
+        ax2.plot(t, x, label=r"$x_q^d$", linewidth=2)
+        ax2.plot(t, z, label=r"$z_q^d$", linewidth=2)
+        ax2.axvline(t_pick, linestyle=":", color="red", label="Pick time")
+        ax2.set_xlabel("t (s)", fontsize=12)
+        ax2.set_ylabel("m", fontsize=12)
+        ax2.set_title("Vị trí theo x và z", fontsize=14)
+        ax2.grid(True, alpha=0.5)
+        ax2.legend(fontsize=10)
+        fig2.tight_layout()
+        
+        plt.show()
 
     return df
 
@@ -396,7 +411,7 @@ def main():
     parser.add_argument("--t_final", type=float, default=t_final_default, help="Thời gian kết thúc (s).")
     parser.add_argument("--beta_min_deg", type=float, default=beta_min_deg, help="Cận dưới beta (deg).")
     parser.add_argument("--beta_max_deg", type=float, default=beta_max_deg, help="Cận trên beta (deg).")
-    parser.add_argument("--out_csv", type=str, default="flat_outputs.csv", help="Đường dẫn CSV xuất ra.")
+    parser.add_argument("--out_csv", type=str, default="minsnap_results/flat_outputs.csv", help="Đường dẫn CSV xuất ra.")
     parser.add_argument("--plot", action="store_true", help="Hiển thị biểu đồ.")
     args = parser.parse_args()
 
