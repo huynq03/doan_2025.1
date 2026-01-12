@@ -8,8 +8,8 @@ import os
 # ==== Parameters ====
 dt = 0.02
 m_q, m_g, g = 0.5, 0.158, 9.81
-l_p, l_q = 0.1, 0.2
-J_q, J_g, L_g = 0.15, 0.001, 0.1
+l_p, l_q = 0.35, 0.2
+J_q, J_g, L_g = 0.15, 0.001, 0.35
 
 # ==== Dynamics ====
 def jax_dynamics_matrix(state, control, dt=dt):

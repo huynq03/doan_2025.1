@@ -12,7 +12,7 @@ import shutil
 
 # ========== CẤU HÌNH ==========
 # Danh sách các giá trị L_g để test (mét)
-LG_VALUES = [0.1, 0.15, 0.25, 0.35]
+LG_VALUES = [0.1, 0.2, 0.35]
 
 # File cần sửa đổi
 FILES_TO_MODIFY = [
@@ -80,22 +80,50 @@ def regenerate_flat_outputs(lg_value):
     print(f"\n  🔄 Tái tạo flat_outputs.csv với L_g = {lg_value} m...")
     print(f"     Đang chạy: python qp5.py")
     
+    # Lưu thời gian sửa đổi file cũ (nếu tồn tại)
+    flat_outputs_path = "minsnap_results/flat_outputs.csv"
+    old_mtime = None
+    if os.path.exists(flat_outputs_path):
+        old_mtime = os.path.getmtime(flat_outputs_path)
+        print(f"     File cũ: {flat_outputs_path} (mtime: {old_mtime})")
+    
     # Chạy qp5.py để tạo flat_outputs.csv mới
     cmd = ["python", "qp5.py"]
     result = subprocess.run(cmd, capture_output=True, text=True)
+    
+    # Hiển thị output của qp5.py
+    if result.stdout:
+        print(f"\n     === OUTPUT từ qp5.py ===")
+        for line in result.stdout.split('\n')[:10]:  # Hiển thị 10 dòng đầu
+            if line.strip():
+                print(f"     {line}")
+        print(f"     === END OUTPUT ===\n")
     
     if result.returncode != 0:
         print(f"  ✗ Lỗi khi chạy qp5.py:")
         print(result.stderr)
         return False
     
-    print(f"  ✓ Đã tái tạo flat_outputs.csv thành công!")
-    
     # Kiểm tra file có tồn tại không
-    flat_outputs_path = "minsnap_results/flat_outputs.csv"
     if not os.path.exists(flat_outputs_path):
         print(f"  ✗ Không tìm thấy {flat_outputs_path} sau khi chạy qp5.py")
         return False
+    
+    # Kiểm tra xem file có được cập nhật không
+    new_mtime = os.path.getmtime(flat_outputs_path)
+    if old_mtime and new_mtime == old_mtime:
+        print(f"  ⚠️  CẢNH BÁO: File không được cập nhật! (mtime giống nhau)")
+        return False
+    
+    # Đọc và hiển thị thông tin file mới
+    df = pd.read_csv(flat_outputs_path)
+    print(f"  ✓ Đã tái tạo flat_outputs.csv thành công!")
+    print(f"     • File mới: mtime = {new_mtime}")
+    print(f"     • Số dòng: {len(df)}")
+    print(f"     • Cột: {list(df.columns)}")
+    print(f"     • x_q range: [{df['x_q'].min():.3f}, {df['x_q'].max():.3f}]")
+    print(f"     • z_q range: [{df['z_q'].min():.3f}, {df['z_q'].max():.3f}]")
+    print(f"     • beta range: [{np.rad2deg(df['beta'].min()):.1f}°, {np.rad2deg(df['beta'].max()):.1f}°]")
     
     return True
 

@@ -27,33 +27,33 @@ def finite_diff(t: np.ndarray, y: np.ndarray, order: int) -> np.ndarray:
 
 
 @dataclass
-class Gains:
-    # Vòng ngoài (x -> attitude)
-    kpx: float = 1.2
-    kdx: float = 0.6
-    # Cao độ
-    kpz: float = 10.0
-    kdz: float = 5.5
-    # Attitude (theta)
-    kp_theta: float = 6.0
-    kd_theta: float = 2.5
-    # Cánh tay (beta)
-    kp_beta: float = 2
-    kd_beta: float = 0.6
-
 # class Gains:
 #     # Vòng ngoài (x -> attitude)
-#     kpx: float = 6.0
-#     kdx: float = 3.0
+#     kpx: float = 1.2
+#     kdx: float = 0.6
 #     # Cao độ
-#     kpz: float = 50.0
-#     kdz: float = 27.5
+#     kpz: float = 10.0
+#     kdz: float = 5.5
 #     # Attitude (theta)
-#     kp_theta: float = 30.0
-#     kd_theta: float = 12.5
+#     kp_theta: float = 6.0
+#     kd_theta: float = 2.5
 #     # Cánh tay (beta)
-#     kp_beta: float = 10.0
-#     kd_beta: float = 3.0
+#     kp_beta: float = 2
+#     kd_beta: float = 0.6
+
+class Gains:
+    # Vòng ngoài (x -> attitude)
+    kpx: float = 6.0
+    kdx: float = 3.0
+    # Cao độ
+    kpz: float = 50.0
+    kdz: float = 27.5
+    # Attitude (theta)
+    kp_theta: float = 30.0
+    kd_theta: float = 12.5
+    # Cánh tay (beta)
+    kp_beta: float = 10.0
+    kd_beta: float = 3.0
 class PDFFController:
     def __init__(
         self,
