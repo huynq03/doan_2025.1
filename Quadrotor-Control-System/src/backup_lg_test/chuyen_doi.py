@@ -8,7 +8,7 @@ PARAMS = dict(
     m_g = 0.158,     # kg
     J_q = 0.15,      # kg*m^2
     J_g = 0.001,     # kg*m^2
-    L_g = 0.1,       # m
+    L_g = 0.35,       # m
     g   = 9.81,      # m/s^2
 )
 

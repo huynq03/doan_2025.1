@@ -58,7 +58,7 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt, save_frames=False, outpu
     if save_frames:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        num_frames_to_save = 20
+        num_frames_to_save = 40
         total_frames = len(states)
         frame_indices = np.linspace(0, total_frames - 1, num_frames_to_save, dtype=int)
         print(f"[INFO] Sẽ lưu {num_frames_to_save} frames vào {output_dir}")

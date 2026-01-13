@@ -8,8 +8,8 @@ import os
 # ==== Parameters ====
 dt = 0.02
 m_q, m_g, g = 0.5, 0.158, 9.81
-l_p, l_q = 0.1, 0.2
-J_q, J_g, L_g = 0.15, 0.001, 0.1
+l_p, l_q = 0.35, 0.2
+J_q, J_g, L_g = 0.15, 0.001, 0.35
 
 # ==== Dynamics ====
 def jax_dynamics_matrix(state, control, dt=dt):
@@ -58,7 +58,7 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt, save_frames=False, outpu
     if save_frames:
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        num_frames_to_save = 20
+        num_frames_to_save = 40
         total_frames = len(states)
         frame_indices = np.linspace(0, total_frames - 1, num_frames_to_save, dtype=int)
         print(f"[INFO] Sẽ lưu {num_frames_to_save} frames vào {output_dir}")

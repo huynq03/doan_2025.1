@@ -12,7 +12,7 @@ import shutil
 
 # ========== CẤU HÌNH ==========
 # Danh sách các giá trị L_g để test (mét)
-LG_VALUES = [0.1, 0.2, 0.35]
+LG_VALUES = [0.1, 0.15, 0.2, 0.25, 0.35]
 
 # File cần sửa đổi
 FILES_TO_MODIFY = [
@@ -182,84 +182,103 @@ def load_trajectory(csv_file):
     }
 
 def plot_comparison(trajectories, lg_values):
-    """Vẽ biểu đồ so sánh các quỹ đạo"""
-    
-    fig = plt.figure(figsize=(16, 10))
-    
+    """Vẽ biểu đồ so sánh thành bốn figure riêng."""
+
     # Tạo colormap
     colors = plt.cm.viridis(np.linspace(0, 1, len(lg_values)))
-    
-    # 1. Quỹ đạo X-Z
-    ax1 = plt.subplot(2, 2, 1)
+
+    # Đảm bảo thư mục output tồn tại
+    output_dir = 'minsnap_results'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    saved_files = []
+
+    # 1) Figure: Quỹ đạo X-Z
+    fig1 = plt.figure(figsize=(8, 6))
+    ax1 = fig1.add_subplot(1, 1, 1)
     for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
         if traj is not None:
-            ax1.plot(traj['x_q'], traj['z_q'], 
-                    color=colors[i], linewidth=2, 
-                    label=f'L_g = {lg:.2f}m')
-    ax1.set_xlabel('X (m)', fontsize=12)
-    ax1.set_ylabel('Z (m)', fontsize=12)
-    ax1.set_title('Quỹ đạo XZ', fontsize=14, fontweight='bold')
+            ax1.plot(traj['x_q'], traj['z_q'],
+                     color=colors[i], linewidth=2,
+                     label=f'L_g = {lg:.2f}m')
+    ax1.set_xlabel('x(m)', fontsize=12)
+    ax1.set_ylabel('z(m)', fontsize=12)
+    ax1.set_title('Các quỹ đạo chuyển động', fontsize=14)
     ax1.grid(True, alpha=0.3)
     ax1.legend(fontsize=9)
     ax1.axis('equal')
-    
-    # 2. X và Z theo thời gian (gộp)
-    ax2 = plt.subplot(2, 2, 2)
+    file1 = os.path.join(output_dir, 'cacquydao.png')
+    fig1.savefig(file1, dpi=150, bbox_inches='tight')
+    saved_files.append(file1)
+
+    # 2) Figure: x và z theo thời gian (gộp)
+    fig2 = plt.figure(figsize=(10, 6))
+    ax2 = fig2.add_subplot(1, 1, 1)
     for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
         if traj is not None:
-            ax2.plot(traj['t'], traj['x_q'], 
-                    color=colors[i], linewidth=2, linestyle='-',
-                    label=f'X - L_g={lg:.2f}m')
-            ax2.plot(traj['t'], traj['z_q'], 
-                    color=colors[i], linewidth=2, linestyle='--',
-                    label=f'Z - L_g={lg:.2f}m')
+            ax2.plot(traj['t'], traj['x_q'],
+                     color=colors[i], linewidth=2, linestyle='-',
+                     label=f'x - L_g={lg:.2f}m')
+            ax2.plot(traj['t'], traj['z_q'],
+                     color=colors[i], linewidth=2, linestyle='--',
+                     label=f'z - L_g={lg:.2f}m')
     ax2.set_xlabel('Thời gian (s)', fontsize=12)
     ax2.set_ylabel('Vị trí (m)', fontsize=12)
-    ax2.set_title('Vị trí X và Z theo thời gian', fontsize=14, fontweight='bold')
+    ax2.set_title('Vị trí x và z theo thời gian', fontsize=14)
     ax2.grid(True, alpha=0.3)
     ax2.legend(fontsize=8, ncol=2)
-    
-    # 3. Theta và Beta theo thời gian (gộp)
-    ax3 = plt.subplot(2, 2, 3)
+    file2 = os.path.join(output_dir, 'saisoxz.png')
+    fig2.savefig(file2, dpi=150, bbox_inches='tight')
+    saved_files.append(file2)
+
+    # 3) Figure: Theta và Beta theo thời gian (gộp)
+    fig3 = plt.figure(figsize=(10, 6))
+    ax3 = fig3.add_subplot(1, 1, 1)
     for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
         if traj is not None:
-            ax3.plot(traj['t'], np.rad2deg(traj['theta']), 
-                    color=colors[i], linewidth=2, linestyle='-',
-                    label=f'θ - L_g={lg:.2f}m')
-            ax3.plot(traj['t'], np.rad2deg(traj['beta']), 
-                    color=colors[i], linewidth=2, linestyle='--',
-                    label=f'β - L_g={lg:.2f}m')
+            ax3.plot(traj['t'], np.rad2deg(traj['theta']),
+                     color=colors[i], linewidth=2, linestyle='-',
+                     label=f'θ - L_g={lg:.2f}m')
+            ax3.plot(traj['t'], np.rad2deg(traj['beta']),
+                     color=colors[i], linewidth=2, linestyle='--',
+                     label=f'β - L_g={lg:.2f}m')
     ax3.set_xlabel('Thời gian (s)', fontsize=12)
     ax3.set_ylabel('Góc (độ)', fontsize=12)
-    ax3.set_title('Góc Theta và Beta theo thời gian', fontsize=14, fontweight='bold')
+    ax3.set_title(r'Góc $\theta$ và $\beta$ theo thời gian', fontsize=14)
     ax3.grid(True, alpha=0.3)
     ax3.legend(fontsize=8, ncol=2)
-    
-    # 4. Sai số từ giá trị gốc (L_g = 0.35)
-    ax4 = plt.subplot(2, 2, 4)
+    file3 = os.path.join(output_dir, 'saisogocbetatheta.png')
+    fig3.savefig(file3, dpi=150, bbox_inches='tight')
+    saved_files.append(file3)
+
+    # 4) Figure: Sai số so với L_g = 0.35m
+    fig4 = plt.figure(figsize=(10, 6))
+    ax4 = fig4.add_subplot(1, 1, 1)
     if trajectories[-1] is not None:  # Index cuối là L_g = 0.35
         ref_traj = trajectories[-1]
         for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
-            if traj is not None and i != len(trajectories)-1:
-                # Tính sai số Euclidean
-                error = np.sqrt((traj['x_q'] - ref_traj['x_q'])**2 + 
-                              (traj['z_q'] - ref_traj['z_q'])**2)
-                ax4.plot(traj['t'], error, 
-                        color=colors[i], linewidth=2,
-                        label=f'L_g = {lg:.2f}m')
+            if traj is not None and i != len(trajectories) - 1:
+                error = np.sqrt((traj['x_q'] - ref_traj['x_q'])**2 +
+                                (traj['z_q'] - ref_traj['z_q'])**2)
+                ax4.plot(traj['t'], error,
+                         color=colors[i], linewidth=2,
+                         label=f'L_g = {lg:.2f}m')
         ax4.set_xlabel('Thời gian (s)', fontsize=12)
         ax4.set_ylabel('Sai số (m)', fontsize=12)
-        ax4.set_title('Sai số so với L_g = 0.35m', fontsize=14, fontweight='bold')
+        ax4.set_title('Sai số so với L_g = 0.35m', fontsize=14)
         ax4.grid(True, alpha=0.3)
         ax4.legend(fontsize=9)
-    
-    plt.tight_layout()
-    
-    # Lưu hình
-    output_file = 'minsnap_results/lg_comparison_regenerated.png'
-    plt.savefig(output_file, dpi=150, bbox_inches='tight')
-    print(f"\n✓ Đã lưu biểu đồ so sánh: {output_file}")
-    
+    file4 = os.path.join(output_dir, 'saisol_g.png')
+    fig4.savefig(file4, dpi=150, bbox_inches='tight')
+    saved_files.append(file4)
+
+    # Thông báo các file đã lưu
+    print("\n✓ Đã lưu các biểu đồ:")
+    for path in saved_files:
+        print(f"  • {path}")
+
+    # Hiển thị tất cả hình
     plt.show()
 
 def print_statistics(trajectories, lg_values):
@@ -342,7 +361,11 @@ def main():
     for i, (lg, file) in enumerate(zip(LG_VALUES, result_files)):
         if file:
             print(f"  {i+1}. L_g = {lg:.2f}m: {file}")
-    print(f"\nBiểu đồ so sánh: minsnap_results/lg_comparison_regenerated.png")
+    print("\nBiểu đồ so sánh đã lưu:")
+    print("  • minsnap_results/lg_xz_regenerated.png")
+    print("  • minsnap_results/lg_xz_time_regenerated.png")
+    print("  • minsnap_results/lg_angles_regenerated.png")
+    print("  • minsnap_results/lg_error_regenerated.png")
     print(f"Files backup tại: {BACKUP_DIR}/")
 
 if __name__ == "__main__":

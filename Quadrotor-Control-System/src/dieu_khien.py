@@ -38,22 +38,22 @@ class Gains:
     kp_theta: float = 6.0
     kd_theta: float = 2.5
     # Cánh tay (beta)
-    kp_beta: float = 2
+    kp_beta: float = 2.0
     kd_beta: float = 0.6
 
 # class Gains:
 #     # Vòng ngoài (x -> attitude)
-#     kpx: float = 6.0
-#     kdx: float = 3.0
+#     kpx: float = 12.0
+#     kdx: float = 6.0
 #     # Cao độ
-#     kpz: float = 50.0
-#     kdz: float = 27.5
+#     kpz: float = 100.0
+#     kdz: float = 55.0
 #     # Attitude (theta)
-#     kp_theta: float = 30.0
-#     kd_theta: float = 12.5
+#     kp_theta: float = 60.0
+#     kd_theta: float = 25.0
 #     # Cánh tay (beta)
-#     kp_beta: float = 10.0
-#     kd_beta: float = 3.0
+#     kp_beta: float = 20.0
+#     kd_beta: float = 6.0
 class PDFFController:
     def __init__(
         self,

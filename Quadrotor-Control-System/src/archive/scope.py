@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 # ==== Parameters ====
-dt, T = 0.02, 10.0
+dt, T = 0.02, 3.0
 m_q, m_g, g = 0.5, 0.158, 9.81
 I_xx, l_p, l_q = 0.15, 0.35, 0.2
 J_q, J_g, L_g = 0.15, 0.0, 0.35
@@ -81,19 +81,79 @@ class CascadePIDActuatedPendulum:
         self.t += dt
         return u1, u2, u3
 
+# ==== Load Controls ====
+def load_controls_from_csv(filename, t_start=0.0, t_end=None):
+    """Đọc controls từ CSV file trong khoảng thời gian [t_start, t_end]"""
+    import csv
+    times, u1s, u2s, u3s = [], [], [], []
+    with open(filename, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            t = float(row['time'])
+            if t >= t_start and (t_end is None or t <= t_end):
+                times.append(t)
+                u1s.append(float(row['u1']))
+                u2s.append(float(row['u2']))
+                u3s.append(float(row['u3']))
+    controls = np.array(list(zip(u1s, u2s, u3s)))
+    print(f"✓ Đã load {len(controls)} bước điều khiển từ t={t_start}s đến t={times[-1]:.2f}s")
+    return np.array(times), controls
+
 # ==== Simulation ====
-def simulate(controller, T=T, dt=dt):
+def simulate(controller, T=T, dt=dt, save_controls=None):
     N = int(T/dt)
     state = np.array([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, np.deg2rad(-30.0), 0.0]) 
     # y, y_dot, z, z_dot, phi, phi_dot, beta, beta_dot
     states, controls = [state], []
-    for _ in range(N):
+    times = []
+    for i in range(N):
         u1, u2, u3 = controller.step(state) # cap nhat dieu khien theo trang thai hien tai
         u = jnp.array([u1, u2, u3], dtype=jnp.float32)
         state = np.array(jax_dynamics_matrix(state, u))
         states.append(state)
         controls.append([u1, u2, u3])
+        times.append(i * dt)
+    
+    # Lưu controls ra file nếu được yêu cầu
+    if save_controls is not None:
+        import csv
+        with open(save_controls, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['time', 'u1', 'u2', 'u3', 'y', 'z', 'phi', 'beta'])
+            for i, (t, ctrl, st) in enumerate(zip(times, controls, states[1:])):
+                writer.writerow([t, ctrl[0], ctrl[1], ctrl[2], 
+                               st[0], st[2], st[4], st[6]])
+        print(f"✓ Đã lưu {len(controls)} bước điều khiển vào: {save_controls}")
+    
     return np.array(states), np.array(controls)
+def simulate_fixed_control(fixed_u1, fixed_u2, fixed_u3, T=T, dt=dt):
+    N = int(T/dt)
+    state = np.array([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, np.deg2rad(-30.0), 0.0])
+    states = [state]
+    
+    for _ in range(N):
+        u = jnp.array([fixed_u1, fixed_u2, fixed_u3], dtype=jnp.float32)
+        state = np.array(jax_dynamics_matrix(state, u))  # ← Lực cố định
+        states.append(state)
+    
+    return np.array(states)
+
+def simulate_from_controls(controls_array, dt=dt, initial_state=None):
+    """Chạy simulation với mảng controls có sẵn (thay đổi theo thời gian)"""
+    if initial_state is None:
+        state = np.array([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, np.deg2rad(-30.0), 0.0])
+    else:
+        state = initial_state.copy()
+    
+    states = [state]
+    for i in range(len(controls_array)):
+        u1, u2, u3 = controls_array[i]
+        u = jnp.array([u1, u2, u3], dtype=jnp.float32)
+        state = np.array(jax_dynamics_matrix(state, u))
+        states.append(state)
+    
+    print(f"✓ Đã simulate {len(controls_array)} bước với controls từ file")
+    return np.array(states)
 
 # ==== Visualization ====
 def animate(states, controls, target=(5.0,5.0), dt=dt):
@@ -208,9 +268,24 @@ def animate(states, controls, target=(5.0,5.0), dt=dt):
 
 # ==== Main ====
 def main():
-    controller = CascadePIDActuatedPendulum(target=(5.0, 5.0))
-    states, controls = simulate(controller)
-    animate(states, controls, target=(5.0,5.0))
+    # Chế độ 1: Chạy PID controller và lưu controls
+    # controller = CascadePIDActuatedPendulum(target=(5.0, 5.0))
+    # states, controls = simulate(controller, save_controls="controls_to_5_5.csv")
+    # animate(states, controls, target=(5.0,5.0))
+    
+    # Chế độ 2: Load TOÀN BỘ controls từ CSV và replay (không dùng PID)
+    times, controls_loaded = load_controls_from_csv("thuan.csv")
+    states = simulate_from_controls(controls_loaded)
+    animate(states, controls_loaded, target=(5.0,5.0))
+    
+    # Chế độ 3: Load controls từ CSV trong khoảng thời gian cụ thể (ví dụ 1s-3s)
+    # times, controls_1_3s = load_controls_from_csv("controls_to_5_5.csv", t_start=1.0, t_end=3.0)
+    # states = simulate_from_controls(controls_1_3s)
+    # animate(states, controls_1_3s, target=(5.0,5.0))
+    
+    # Chế độ 4: Lực cố định
+    # states = simulate_fixed_control(70.0, 70.0, 0.0)
+    # animate(states, np.zeros((len(states)-1, 3)))
 
 if __name__ == "__main__":
     main()
