@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import csv
+import os
 
 # ==== Parameters ====
 dt = 0.02
@@ -56,7 +57,7 @@ def load_controls_from_csv(filename):
 def simulate_from_controls(controls_array, dt=dt, initial_state=None):
     """Chạy simulation với mảng controls có sẵn"""
     if initial_state is None:
-        state = np.array([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, np.deg2rad(-30.0), 0.0])
+        state = np.array([0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0])
     else:
         state = initial_state.copy()
     
@@ -71,7 +72,15 @@ def simulate_from_controls(controls_array, dt=dt, initial_state=None):
     return np.array(states)
 
 # ==== Visualization ====
-def animate(states, controls, target=(5.0, 5.0), dt=dt):
+def animate(
+    states,
+    controls,
+    dt=dt,
+    save_image=True,
+    save_frame_time=None,
+    save_all_frames=False,
+    frames_dir="frames",
+):
     scale_draw = 2
     l_q_vis = l_q * scale_draw
     l_p_vis = l_p * scale_draw
@@ -88,11 +97,11 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
     y, z, phi, theta = states[:,0], states[:,2], states[:,4], states[:,6]
 
     fig, ax = plt.subplots(figsize=(10*scale_draw/2, 10*scale_draw/2), dpi=120)
-    ax.set_xlim(min(y.min(), target[0])-1, max(y.max(), target[0])+1)
-    ax.set_ylim(min(z.min(), target[1])-1, max(z.max(), target[1])+1)
+    margin = 1.0
+    ax.set_xlim(y.min()-margin, y.max()+margin)
+    ax.set_ylim(z.min()-margin, z.max()+margin)
     ax.set_aspect("equal")
     ax.grid(True, alpha=0.3)
-    # ax.add_patch(plt.Circle(target, 0.1*scale_draw, color="g", fill=False))
 
     frame_line, = ax.plot([], [], "k", lw=lw_body)
     tether_line, = ax.plot([], [], "gray", lw=lw_pend)
@@ -103,8 +112,8 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
     right_thrust_line, = ax.plot([], [], color="orange", lw=lw_thrust)
 
     def rotor_forces(u1, u2, arm):
-        fR = 0.5 * (u1 + u2 / max(1e-9, arm))
-        fL = 0.5 * (u1 - u2 / max(1e-9, arm))
+        fL = 0.5 * (u1 + u2 / max(1e-9, arm))
+        fR = 0.5 * (u1 - u2 / max(1e-9, arm))
         return max(0.0, fL), max(0.0, fR)
     
     # Giới hạn góc quay gripper
@@ -153,12 +162,54 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt):
         return (frame_line, tether_line, trail, left_line, right_line, left_thrust_line, right_thrust_line)
 
     ani = FuncAnimation(fig, update, frames=len(states), interval=dt*1000, blit=True)
+    
+    # Lưu frame tại thời điểm chỉ định
+    if save_frame_time is not None:
+        idx = min(int(round(save_frame_time / dt)), len(states) - 1)
+        update(idx)
+        fig.canvas.draw()
+        fname = f"simulation_t{save_frame_time:.2f}s.png"
+        fig.savefig(fname, dpi=150, bbox_inches='tight')
+        print(f"✓ Đã lưu hình tại t={save_frame_time:.2f}s: {fname}")
+
+    # Lưu tất cả các frame nếu cần
+    if save_all_frames and save_image:
+        os.makedirs(frames_dir, exist_ok=True)
+        total_frames = len(states)
+        for i in range(total_frames):
+            update(i)
+            fig.canvas.draw()
+            frame_path = os.path.join(frames_dir, f"frame_{i:04d}.png")
+            fig.savefig(frame_path, dpi=150, bbox_inches='tight')
+        print(f"✓ Đã lưu {total_frames} frame vào thư mục: {frames_dir}")
+
+    # Lưu frame cuối cùng thành ảnh
+    if save_image:
+        fig.canvas.draw()
+        fig.savefig('simulation_final_frame.png', dpi=150, bbox_inches='tight')
+        print(f"✓ Đã lưu hình ảnh frame cuối: simulation_final_frame.png")
+    
     try:
         plt.show()
     except:
         pass
     finally:
         plt.close(fig)
+
+# ==== Save Trajectory ====
+def save_trajectory(states, controls, filename="trajectory_output.csv"):
+    """Lưu quỹ đạo vào file CSV"""
+    import csv
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        # Header
+        writer.writerow(['time', 'y', 'y_dot', 'z', 'z_dot', 'phi', 'phi_dot', 'beta', 'beta_dot', 'u1', 'u2', 'u3'])
+        # Data
+        for i, state in enumerate(states):
+            t = i * dt
+            u1, u2, u3 = controls[i] if i < len(controls) else controls[-1]
+            writer.writerow([f'{t:.4f}'] + [f'{val:.6f}' for val in state] + [f'{u1:.6f}', f'{u2:.6f}', f'{u3:.6f}'])
+    print(f"✓ Đã lưu quỹ đạo vào: {filename}")
 
 # ==== Main ====
 def main():
@@ -168,8 +219,11 @@ def main():
     # Mô phỏng
     states = simulate_from_controls(controls)
     
+    # Lưu quỹ đạo
+    # save_trajectory(states, controls, "trajectory_sim.csv")
+    
     # Hiển thị animation
-    animate(states, controls, target=(5.0, 5.0))
+    animate(states, controls, save_image=True, save_frame_time=2.50, save_all_frames=True, frames_dir="frames_all")
 
 if __name__ == "__main__":
     main()
