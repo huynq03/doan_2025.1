@@ -8,9 +8,13 @@ import shutil
 import re
 
 # Cấu hình
-LG_VALUES = [0.1, 0.2, 0.35]
+LG_VALUES = [0.25, 0.3, 0.35, 0.4, 0.45]
 FILES_TO_MODIFY = ["chuyen_doi.py", "mo_phong.py"]
 BACKUP_DIR = "backup_lg_test"
+# Nếu True: dùng file minsnap_results/flat_outputs.csv hiện có, KHÔNG gọi qp5.py
+USE_EXISTING_FLAT = True
+# Giá trị tham chiếu để so sánh (sẽ dùng nếu có trong LG_VALUES)
+REFERENCE_LG = 0.35
 
 def backup_files():
     if not os.path.exists(BACKUP_DIR):
@@ -43,26 +47,35 @@ def modify_lg_value(file_path, lg_value):
         f.write(content)
 
 def regenerate_flat_outputs(lg_value):
+    if USE_EXISTING_FLAT:
+        print(f"  → Dùng file flat_outputs.csv hiện có (L_g={lg_value}m)...", end=" ")
+        flat_path = "minsnap_results/flat_outputs.csv"
+        if not os.path.exists(flat_path):
+            print(f"✗ File không tồn tại")
+            return False
+        print("✓ (không tái tạo)")
+        return True
+
+    # Nếu không dùng file hiện có thì chạy qp5.py để tái tạo
     print(f"  → Tái tạo flat_outputs.csv (L_g={lg_value}m)...", end=" ")
-    
     flat_path = "minsnap_results/flat_outputs.csv"
     old_mtime = os.path.getmtime(flat_path) if os.path.exists(flat_path) else None
-    
+
     result = subprocess.run(["python", "qp5.py"], capture_output=True, text=True)
-    
+
     if result.returncode != 0:
         print(f"✗ Lỗi qp5.py")
         return False
-    
+
     if not os.path.exists(flat_path):
         print(f"✗ File không tồn tại")
         return False
-    
+
     new_mtime = os.path.getmtime(flat_path)
     if old_mtime and new_mtime == old_mtime:
         print(f"⚠️ File không cập nhật")
         return False
-    
+
     print("✓")
     return True
 
@@ -98,60 +111,85 @@ def load_trajectory(csv_file):
     }
 
 def plot_comparison(trajectories, lg_values):
-    fig = plt.figure(figsize=(16, 10))
     colors = plt.cm.viridis(np.linspace(0, 1, len(lg_values)))
-    
-    # Quỹ đạo X-Z
-    ax1 = plt.subplot(2, 2, 1)
+
+    # Figure 1: Quỹ đạo X-Z (riêng)
+    fig1, ax1 = plt.subplots(figsize=(8, 6))
     for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
         if traj is not None:
-            ax1.plot(traj['x_q'], traj['z_q'], color=colors[i], linewidth=2, 
-                    label=f'L_g = {lg:.2f}m')
-    ax1.set_xlabel('X (m)'); ax1.set_ylabel('Z (m)')
-    ax1.set_title('Quỹ đạo XZ', fontweight='bold')
-    ax1.grid(True, alpha=0.3); ax1.legend(); ax1.axis('equal')
-    
-    # X và Z theo thời gian
-    ax2 = plt.subplot(2, 2, 2)
+            ax1.plot(traj['x_q'], traj['z_q'], color=colors[i], linewidth=2, label=f'L_g = {lg:.2f} m')
+    ax1.set_xlabel('x(m)', fontsize=12)
+    ax1.set_ylabel('z(m)', fontsize=12)
+    ax1.set_title('Các quỹ đạo chuyển động', fontsize=14)
+    ax1.grid(True, alpha=0.3)
+    ax1.legend()
+    ax1.axis('equal')
+    fig1.tight_layout()
+
+    # Figure 2: X và Z theo thời gian
+    fig2, ax2 = plt.subplots(figsize=(8, 6))
     for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
         if traj is not None:
-            ax2.plot(traj['t'], traj['x_q'], color=colors[i], linewidth=2, linestyle='-',
-                    label=f'X - {lg:.2f}m')
-            ax2.plot(traj['t'], traj['z_q'], color=colors[i], linewidth=2, linestyle='--',
-                    label=f'Z - {lg:.2f}m')
-    ax2.set_xlabel('Thời gian (s)'); ax2.set_ylabel('Vị trí (m)')
-    ax2.set_title('X và Z theo thời gian', fontweight='bold')
-    ax2.grid(True, alpha=0.3); ax2.legend(fontsize=8, ncol=2)
-    
-    # Theta và Beta
-    ax3 = plt.subplot(2, 2, 3)
+            ax2.plot(traj['t'], traj['x_q'], color=colors[i], linewidth=2, linestyle='-', label=f'X - {lg:.2f} m')
+            ax2.plot(traj['t'], traj['z_q'], color=colors[i], linewidth=2, linestyle='--', label=f'Z - {lg:.2f} m')
+    ax2.set_xlabel('Thời gian (s)', fontsize=12)
+    ax2.set_ylabel('Vị trí (m)', fontsize=12)
+    ax2.set_title('Vị trí x và z theo thời gian', fontsize=14)
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(fontsize=8, ncol=2)
+    fig2.tight_layout()
+
+    # Figure 3: Theta và Beta
+    fig3, ax3 = plt.subplots(figsize=(8, 6))
     for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
         if traj is not None:
-            ax3.plot(traj['t'], np.rad2deg(traj['theta']), color=colors[i], linewidth=2, 
-                    linestyle='-', label=f'θ - {lg:.2f}m')
-            ax3.plot(traj['t'], np.rad2deg(traj['beta']), color=colors[i], linewidth=2, 
-                    linestyle='--', label=f'β - {lg:.2f}m')
-    ax3.set_xlabel('Thời gian (s)'); ax3.set_ylabel('Góc (độ)')
-    ax3.set_title('Theta và Beta', fontweight='bold')
-    ax3.grid(True, alpha=0.3); ax3.legend(fontsize=8, ncol=2)
-    
-    # Sai số
-    ax4 = plt.subplot(2, 2, 4)
-    if trajectories[-1] is not None:
-        ref_traj = trajectories[-1]
+            ax3.plot(traj['t'], np.rad2deg(traj['theta']), color=colors[i], linewidth=2, linestyle='-', label=f'θ - {lg:.2f} m')
+            ax3.plot(traj['t'], np.rad2deg(traj['beta']), color=colors[i], linewidth=2, linestyle='--', label=f'β - {lg:.2f} m')
+    ax3.set_xlabel('Thời gian (s)', fontsize=12)
+    ax3.set_ylabel('Góc (°)', fontsize=12)
+    ax3.set_title(r'Góc $\theta$ và $\beta$ theo thời gian', fontsize=14)
+    ax3.grid(True, alpha=0.3)
+    ax3.legend(fontsize=8, ncol=2)
+    fig3.tight_layout()
+
+    # Figure 4: Sai số so với trường hợp tham chiếu (REFERENCE_LG nếu có)
+    fig4, ax4 = plt.subplots(figsize=(8, 6))
+    # chọn chỉ mục tham chiếu: nếu có REFERENCE_LG trong lg_values dùng nó, không thì dùng phần tử cuối
+    try:
+        idx_ref = list(lg_values).index(REFERENCE_LG)
+        ref_lg = REFERENCE_LG
+    except ValueError:
+        idx_ref = len(lg_values) - 1
+        ref_lg = lg_values[idx_ref]
+
+    if trajectories and trajectories[idx_ref] is not None:
+        ref_traj = trajectories[idx_ref]
         for i, (lg, traj) in enumerate(zip(lg_values, trajectories)):
-            if traj is not None and i != len(trajectories)-1:
-                error = np.sqrt((traj['x_q'] - ref_traj['x_q'])**2 + 
-                              (traj['z_q'] - ref_traj['z_q'])**2)
-                ax4.plot(traj['t'], error, color=colors[i], linewidth=2, label=f'{lg:.2f}m')
-        ax4.set_xlabel('Thời gian (s)'); ax4.set_ylabel('Sai số (m)')
-        ax4.set_title(f'Sai số so với L_g={lg_values[-1]:.2f}m', fontweight='bold')
-        ax4.grid(True, alpha=0.3); ax4.legend()
-    
-    plt.tight_layout()
-    output_file = 'minsnap_results/lg_comparison.png'
-    plt.savefig(output_file, dpi=150, bbox_inches='tight')
-    print(f"\n✓ Đã lưu: {output_file}")
+            if traj is not None and i != idx_ref:
+                # đảm bảo kích thước mảng giống nhau trước khi tính lỗi
+                error = np.sqrt((traj['x_q'] - ref_traj['x_q'])**2 + (traj['z_q'] - ref_traj['z_q'])**2)
+                ax4.plot(traj['t'], error, color=colors[i], linewidth=2, label=f'{lg:.2f} m')
+        ax4.set_xlabel('Thời gian (s)', fontsize=12)
+        ax4.set_ylabel('Sai số (m)', fontsize=12)
+        ax4.set_title(f'Sai số so với L_g={ref_lg:.2f} m', fontsize=14)
+        ax4.grid(True, alpha=0.3)
+        ax4.legend()
+    fig4.tight_layout()
+
+    # Lưu từng figure riêng
+    out1 = 'minsnap_results/lg_xz.png'
+    out2 = 'minsnap_results/lg_xz_time.png'
+    out3 = 'minsnap_results/lg_angles.png'
+    out4 = 'minsnap_results/lg_error.png'
+    try:
+        fig1.savefig(out1, dpi=150, bbox_inches='tight')
+        fig2.savefig(out2, dpi=150, bbox_inches='tight')
+        fig3.savefig(out3, dpi=150, bbox_inches='tight')
+        fig4.savefig(out4, dpi=150, bbox_inches='tight')
+        print(f"\n✓ Đã lưu: {out1}, {out2}, {out3}, {out4}")
+    except Exception as e:
+        print(f"✗ Lỗi khi lưu ảnh: {e}")
+
     plt.show()
 
 def print_statistics(trajectories, lg_values):
