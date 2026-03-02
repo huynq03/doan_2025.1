@@ -1,4 +1,4 @@
-# control1.py
+# dieu_khien.py
 # -*- coding: utf-8 -*-
 """
 PD + Feed-forward controller cho quadrotor + gripper (mặt phẳng x–z),
