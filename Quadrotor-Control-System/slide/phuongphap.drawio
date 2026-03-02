@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="26.0.6">
+  <diagram name="Page-1" id="MVy689MPbjAAfuNUePbs">
+    <mxGraphModel dx="989" dy="509" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" value="Mô hình hóa" style="rounded=1;fontStyle=1;fontSize=16;strokeWidth=2;fontColor=default;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="3" value="Thiết kế quỹ đạo chuyển động" style="rounded=1;fontStyle=1;fontSize=16;strokeWidth=2;fontColor=default;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="40" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="4" value="Thiết kế bộ điều khiển" style="rounded=1;fontStyle=1;fontSize=16;strokeWidth=2;fontColor=default;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="40" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="5" value="Mô phỏng" style="rounded=1;fontStyle=1;fontSize=16;strokeWidth=2;fontColor=default;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="640" y="40" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="3NeId8HJFkpcWsvEfcNp-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeWidth=2;endSize=1;dashed=1;" edge="1" parent="1" source="6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="409" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="6" value="Quy hoạch toàn phương (QP)" style="rounded=1;fontStyle=1;fontSize=16;strokeWidth=2;fontColor=default;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="239" y="158.5" width="141" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="3NeId8HJFkpcWsvEfcNp-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endSize=1;dashed=1;" edge="1" parent="1" source="7">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="605" y="81" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7" value="PD + FeedForward" style="rounded=1;fontStyle=1;fontSize=16;strokeWidth=2;fontColor=default;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="439" y="160" width="141" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;curved=0;endSize=1;strokeColor=default;" edge="1" parent="1" source="2" target="3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;curved=0;endSize=1;" edge="1" parent="1" source="3" target="4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;curved=0;endSize=1;" edge="1" parent="1" source="4" target="5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;curved=0;endSize=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="3" target="6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="164" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;curved=0;endSize=1;" edge="1" parent="1" source="4" target="7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

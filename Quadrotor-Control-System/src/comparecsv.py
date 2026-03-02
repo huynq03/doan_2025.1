@@ -29,6 +29,22 @@ mean_error = np.mean(abs_error)
 rms_error = np.sqrt(np.mean(error_beta**2))
 max_percent = np.max(percent_error)
 
+# Additional metrics
+# tolerance for "within tolerance" (rad)
+tol = 0.05
+within_tol_count = np.sum(abs_error < tol)
+percent_within_tol = (within_tol_count / len(abs_error)) * 100
+
+# time-step (for integral metrics) — fallback to 0 if single sample
+t = df_sim['t'].values
+dt = np.mean(np.diff(t)) if len(t) > 1 else 0.0
+IAE = np.sum(abs_error) * dt
+ISE = np.sum(error_beta**2) * dt
+ITAE = np.sum(t * abs_error) * dt
+
+# symmetric MAPE (percent)
+sMAPE = np.mean(2 * abs_error / (np.abs(df_sim['beta'].values) + np.abs(df_flat['beta'].values) + 1e-9)) * 100
+
 # Timestamp cho filename
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -185,3 +201,25 @@ if np.max(np.abs(error_beta)) < 1e-6:
 else:
     print("✓  Error hợp lý, bộ điều khiển hoạt động với hiệu suất tracking tốt.")
 print()
+
+# === Export computed metrics to CSV ===
+metrics = {
+    'timestamp': timestamp,
+    'tol_rad': tol,
+    'max_error_rad': float(max_error),
+    'mae_rad': float(mean_error),
+    'rmse_rad': float(rms_error),
+    'std_rad': float(np.std(error_beta)),
+    'max_percent': float(max_percent),
+    'mean_percent': float(np.mean(percent_error)),
+    'percent_within_tol': float(percent_within_tol),
+    'IAE': float(IAE),
+    'ISE': float(ISE),
+    'ITAE': float(ITAE),
+    'sMAPE_percent': float(sMAPE)
+}
+
+metrics_df = pd.DataFrame([metrics])
+metrics_file = os.path.join(media_dir, f'metrics_{timestamp}.csv')
+metrics_df.to_csv(metrics_file, index=False)
+print(f"✓ Lưu metrics: {metrics_file}")

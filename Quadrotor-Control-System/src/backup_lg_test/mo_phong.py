@@ -79,18 +79,26 @@ def animate(states, controls, target=(5.0, 5.0), dt=dt, save_frames=False, outpu
     # fig1.suptitle('Quadrotor Simulation: Camera Tracking')
     
     fig2, ax2 = plt.subplots(figsize=(10, 10), dpi=120)
-    fig2.suptitle("Mô phỏng quỹ đạo thực tế")
-
     # Cấu hình ax1 (Camera Tracking)
     # ax1.set_aspect("equal"); ax1.grid(True, alpha=0.3)
     # ax1.set_title("Camera Tracking")
     # ax1.add_patch(plt.Circle(target, 0.1*scale_draw, color="g", fill=False))
 
     # Cấu hình ax2 (Full View)
-    ax2.set_xlim(min(y.min(), target[0])-1, max(y.max(), target[0])+1)
-    ax2.set_ylim(min(z.min(), target[1])-1, max(z.max(), target[1])+1)
-    ax2.set_aspect("equal"); ax2.grid(True, alpha=0.3)
-    ax2.add_patch(plt.Circle(target, 0.1 , color="g", fill=False))
+    ax2.set_xlim(min(y.min(), target[0]) - 1, max(y.max(), target[0]) + 1)
+    ax2.set_ylim(min(z.min(), target[1]) - 1, max(z.max(), target[1]) + 1)
+    ax2.set_aspect("equal")
+    ax2.set_title('Quỹ đạo chuyển động', fontsize=14)
+    ax2.grid(True, alpha=0.3)
+    ax2.add_patch(plt.Circle(target, 0.1, color="g", fill=False))
+    # Nhãn trục với đơn vị
+    ax2.set_xlabel('x(m)')
+    ax2.set_ylabel('z(m)')
+    # Thu hẹp lề để khung hình chiếm gần hết cửa sổ
+    try:
+        fig2.subplots_adjust(left=0.03, right=0.97, top=0.97, bottom=0.03)
+    except Exception:
+        fig2.tight_layout()
 
     # Marker sẽ bám vào gripper kể từ t >= 2s
     grip_marker, = ax2.plot([], [], marker='o', markersize=12, color='blue')
